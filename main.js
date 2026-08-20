@@ -3,57 +3,65 @@
     const form = document.querySelector("#quote-form");
     const note = document.querySelector("#form-note");
 
-    menuButton.addEventListener("click", () => {
-      const open = document.body.classList.toggle("menu-open");
-      menuButton.setAttribute("aria-expanded", String(open));
-      menuButton.setAttribute("aria-label", open ? "Close menu" : "Open menu");
-    });
+    if (menuButton) {
+      menuButton.addEventListener("click", () => {
+        const open = document.body.classList.toggle("menu-open");
+        menuButton.setAttribute("aria-expanded", String(open));
+        menuButton.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+      });
+    }
 
     links.forEach((link) => {
       link.addEventListener("click", () => {
         document.body.classList.remove("menu-open");
-        menuButton.setAttribute("aria-expanded", "false");
-        menuButton.setAttribute("aria-label", "Open menu");
+        if (menuButton) {
+          menuButton.setAttribute("aria-expanded", "false");
+          menuButton.setAttribute("aria-label", "Open menu");
+        }
       });
     });
 
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const data = new FormData(form);
-      const submission = {
-        name: data.get("name") || "",
-        email: data.get("email") || "",
-        phone: data.get("phone") || "",
-        service: data.get("service") || "",
-        message: data.get("message") || "",
-        submittedAt: new Date().toISOString()
-      };
+    if (form) {
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const data = new FormData(form);
+        const submission = {
+          name: data.get("name") || "",
+          email: data.get("email") || "",
+          phone: data.get("phone") || "",
+          service: data.get("service") || "",
+          message: data.get("message") || "",
+          submittedAt: new Date().toISOString()
+        };
 
-      let saved = false;
-      try {
-        if (window.storage) {
-          const key = "submissions:" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
-          const result = await window.storage.set(key, JSON.stringify(submission), true);
-          saved = !!result;
+        let saved = false;
+        try {
+          if (window.storage) {
+            const key = "submissions:" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+            const result = await window.storage.set(key, JSON.stringify(submission), true);
+            saved = !!result;
+          }
+        } catch (err) {
+          console.error("Could not save submission:", err);
         }
-      } catch (err) {
-        console.error("Could not save submission:", err);
-      }
 
-      const subject = encodeURIComponent("GPSL website quote request");
-      const body = encodeURIComponent(
-        "Name: " + submission.name + "\n" +
-        "Email: " + submission.email + "\n" +
-        "Phone: " + submission.phone + "\n" +
-        "Service: " + submission.service + "\n\n" +
-        "Message:\n" + submission.message
-      );
+        const subject = encodeURIComponent("GPSL website quote request");
+        const body = encodeURIComponent(
+          "Name: " + submission.name + "\n" +
+          "Email: " + submission.email + "\n" +
+          "Phone: " + submission.phone + "\n" +
+          "Service: " + submission.service + "\n\n" +
+          "Message:\n" + submission.message
+        );
 
-      note.textContent = saved
-        ? "Saved! Also opening your email app to send it directly."
-        : "Opening your email app with the message ready to send.";
-      window.location.href = "mailto:GPSExpressTranport@gmail.com?subject=" + subject + "&body=" + body;
-    });
+        if (note) {
+          note.textContent = saved
+            ? "Saved! Also opening your email app to send it directly."
+            : "Opening your email app with the message ready to send.";
+        }
+        window.location.href = "mailto:GPSExpressTranport@gmail.com?subject=" + subject + "&body=" + body;
+      });
+    }
 
     /* Photo card lightbox */
     const photoCards = document.querySelectorAll(".team-photo");
@@ -115,20 +123,22 @@
       if (event.key === "Escape") closeLightbox();
     }
 
-    photoCards.forEach((card) => {
-      card.addEventListener("click", () => openLightbox(card));
-      card.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          openLightbox(card);
-        }
+    if (lightbox && lightboxClose) {
+      photoCards.forEach((card) => {
+        card.addEventListener("click", () => openLightbox(card));
+        card.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openLightbox(card);
+          }
+        });
       });
-    });
 
-    lightboxClose.addEventListener("click", closeLightbox);
-    lightbox.addEventListener("click", (event) => {
-      if (event.target === lightbox) closeLightbox();
-    });
+      lightboxClose.addEventListener("click", closeLightbox);
+      lightbox.addEventListener("click", (event) => {
+        if (event.target === lightbox) closeLightbox();
+      });
+    }
 
     /* Admin view: visit the page with #admin in the URL to see saved quote requests */
     const adminPanel = document.querySelector("#adminPanel");
@@ -179,12 +189,59 @@
       adminPanel.setAttribute("aria-hidden", "true");
     }
 
-    adminClose.addEventListener("click", closeAdminPanel);
-    adminPanel.addEventListener("click", (event) => {
-      if (event.target === adminPanel) closeAdminPanel();
-    });
+    if (adminPanel && adminList && adminClose) {
+      adminClose.addEventListener("click", closeAdminPanel);
+      adminPanel.addEventListener("click", (event) => {
+        if (event.target === adminPanel) closeAdminPanel();
+      });
 
-    if (window.location.hash === "#admin") openAdminPanel();
-    window.addEventListener("hashchange", () => {
       if (window.location.hash === "#admin") openAdminPanel();
-    });
+      window.addEventListener("hashchange", () => {
+        if (window.location.hash === "#admin") openAdminPanel();
+      });
+    }
+
+    /* Promo slider (homepage only) */
+    const promoSlider = document.querySelector("#promoSlider");
+    if (promoSlider) {
+      const slides = Array.from(promoSlider.querySelectorAll(".promo-slide"));
+      const dots = Array.from(promoSlider.querySelectorAll(".promo-dot"));
+      const prevBtn = document.querySelector("#promoPrev");
+      const nextBtn = document.querySelector("#promoNext");
+      let current = 0;
+      let timer = null;
+      const INTERVAL = 5000;
+
+      function goTo(index) {
+        slides[current].classList.remove("active");
+        dots[current].classList.remove("active");
+        current = (index + slides.length) % slides.length;
+        slides[current].classList.add("active");
+        dots[current].classList.add("active");
+      }
+
+      function next() { goTo(current + 1); }
+      function prev() { goTo(current - 1); }
+
+      function startAutoplay() {
+        stopAutoplay();
+        timer = setInterval(next, INTERVAL);
+      }
+      function stopAutoplay() {
+        if (timer) clearInterval(timer);
+      }
+
+      if (nextBtn) nextBtn.addEventListener("click", () => { next(); startAutoplay(); });
+      if (prevBtn) prevBtn.addEventListener("click", () => { prev(); startAutoplay(); });
+      dots.forEach((dot) => {
+        dot.addEventListener("click", () => {
+          goTo(parseInt(dot.dataset.dot, 10));
+          startAutoplay();
+        });
+      });
+
+      promoSlider.addEventListener("mouseenter", stopAutoplay);
+      promoSlider.addEventListener("mouseleave", startAutoplay);
+
+      startAutoplay();
+    }
