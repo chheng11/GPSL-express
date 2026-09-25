@@ -80,6 +80,11 @@
       const photoUrl = (existingImg && existingImg.src) || card.getAttribute("data-photo") || "";
       const telegram = (card.getAttribute("data-telegram") || "").trim();
 
+      if (telegram) {
+        const handleForAlert = telegram.replace(/^@/, "");
+        alert((name ? name + " — " : "") + "Contact via Telegram: @" + handleForAlert);
+      }
+
       lightboxName.textContent = name;
       lightboxRole.textContent = role;
 
